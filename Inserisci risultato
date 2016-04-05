@@ -1,0 +1,58 @@
+        private void inserisciRisultatoBT_Click(object sender, EventArgs e)
+        {
+            Georgia.Open();
+
+            foreach (DataGridViewRow riga in ToDoListGV.SelectedRows)
+            {
+                //Calcolo il mese e lo formatto per costruire il path del foglio di calcolo
+
+                string accettazione = (riga.Cells["accettazione"].Value as string).Substring(0,4);
+                int meseCalcoloInt = ((DateTime)riga.Cells["DataArrivo"].Value).Month;
+                string meseCalcolo = string.Format("{0:00}", meseCalcoloInt);
+                string risultatoStr = "";
+
+                MySqlCommand trovaPar = new MySqlCommand
+                ("SELECT * FROM colorado2016.parametri WHERE id = @id", Georgia);
+
+                MySqlParameter idP = new MySqlParameter();
+                idP.Direction = ParameterDirection.Input;
+                idP.DbType = DbType.String;
+                idP.Value = riga.Cells["idParametro"].Value;
+                trovaPar.Parameters.AddWithValue("@id", idP.Value);
+
+                MySqlDataReader vivo = trovaPar.ExecuteReader();
+
+                vivo.Read();
+
+                string nomeFoglio = vivo["nomeFoglio"] as string;
+                string[] rif = (vivo["rif1"] as string).Split(',');
+                int rigaEx = Convert.ToInt32(rif[0]);
+                int colonnaEx = Convert.ToInt32(rif[1]);
+
+                vivo.Dispose();
+
+                Excel.Application risultatoEA = new Excel.Application();
+
+                Excel.Workbook risultatoWB = risultatoEA.Workbooks.Open(@"\\Server\DATI\Gestione\Calcoli\Calcoli\Archivio\" + meseCalcolo + "\\"
+                     + accettazione + "-16" + "\\" + accettazione + "-16.xls");
+
+                Excel.Worksheet risultatoWs = risultatoWB.Sheets[accettazione + " 16 " + nomeFoglio];
+
+                double decimoMeridio = Convert.ToDouble(risultatoWs.Cells[rigaEx,colonnaEx].Value);
+
+                risultatoWB.Close();
+                risultatoEA.Quit();
+
+                risultatoStr = formatta.significative(decimoMeridio);
+
+                if(formatta.haiTagliato(risultatoStr)==1)
+                { risultatoStr = risultatoStr + "0"; }
+                else if(formatta.haiTagliato(risultatoStr) == 2)
+                { risultatoStr = risultatoStr + ",0"; }
+
+                riga.Cells["Risultato"].Value = risultatoStr;
+
+            }
+
+            Georgia.Close();
+        }
