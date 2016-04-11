@@ -1,0 +1,146 @@
+        private void inserisciRisultatoBT_Click(object sender, EventArgs e)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            Georgia.Open();
+
+            foreach (DataGridViewRow riga in ToDoListGV.SelectedRows)
+            {
+
+                /* Trova l'id relativo alla prova di cui importare il risultato e crea un parametroBean con l'id
+                 Setta i valori di accettazione e data di arrivo */
+
+                int idParametro = (int)riga.Cells["idParametro"].Value;
+
+                parametroBean paraB = daoCL1.ottieniParaByID(Georgia, idParametro);
+
+                paraB.accettazione = (riga.Cells["accettazione"].Value as string).Substring(0, 4);
+
+                paraB.dataAccettazione = (DateTime)riga.Cells["DataArrivo"].Value;
+
+
+
+                bool eAccreditato = Convert.ToBoolean(paraB.eAccreditato);
+
+                string nomeFoglio = paraB.foglio;
+
+                string[] rif = paraB.rif1.Split(',');
+
+                int rigaEx = Convert.ToInt32(rif[0]);
+
+                int colonnaEx = Convert.ToInt32(rif[1]);
+
+                string accettazione = (riga.Cells["accettazione"].Value as string).Substring(0, 4);
+
+                int meseCalcoloInt = ((DateTime)riga.Cells["DataArrivo"].Value).Month;
+
+                string meseCalcolo = string.Format("{0:00}", meseCalcoloInt);
+
+                string risultatoStr = "";
+
+                string percorso = @"\\Server\DATI\Gestione\Calcoli\Calcoli\Archivio\" + meseCalcolo + "\\"
+                     + accettazione + "-16" + "\\" + accettazione + "-16.xls";
+
+                nomeFoglio = accettazione + " 16 " + nomeFoglio;
+
+                exelUtility exeU = new exelUtility(percorso, nomeFoglio);
+
+                if (exeU.RisultatoWs != null)
+                {
+                    //Ottiene il risultato dal foglio di calcolo e lo converte in stringa formattandolo correttamente
+
+                    string risultatoString = exeU.ottieniValore(rigaEx, colonnaEx);
+
+                    Double decimoMeridio = Convert.ToDouble(risultatoString);
+
+                    risultatoStr = formatta.significative(decimoMeridio);
+
+                    if (formatta.haiTagliato(risultatoStr) == 1)
+                    { risultatoStr = risultatoStr + "0"; }
+                    else if (formatta.haiTagliato(risultatoStr) == 2)
+                    { risultatoStr = risultatoStr + ",0"; }
+
+
+                    //Controlla se c'è un segno inferiore davanti al risultato
+
+                    if (exeU.haInferiore(rigaEx, colonnaEx - 1))
+                    {
+                        string inferiore = exeU.ottieniValore(rigaEx, colonnaEx - 1);
+
+                        riga.Cells["Risultato"].Value = inferiore + " " + risultatoStr;
+                    }
+
+                    else
+                    {
+                        //Controlla se il parametro ha un'incertezza.
+
+                        if(eAccreditato)
+                        {
+                            //Se e accreditato importa l'incertezza
+
+                            string[] rifInc = paraB.rif2.Split(',');
+
+                            int rigaInc = Convert.ToInt32(rifInc[0]);
+
+                            int colonnaInc = Convert.ToInt32(rifInc[1]);
+
+                            string incertezzaString = exeU.ottieniValore(rigaInc, colonnaInc);
+
+
+                            //Formatta assegnando 2 cifre significative all'incertezza
+
+                            double incertezza = Convert.ToDouble(incertezzaString);
+
+                            incertezzaString = formatta.significative(incertezza);
+
+                            if (formatta.haiTagliato(incertezzaString) == 1)
+                            { incertezzaString = incertezzaString + "0"; }
+                            else if (formatta.haiTagliato(incertezzaString) == 2)
+                            { incertezzaString = incertezzaString + ",0"; }
+
+
+                            //Inserisci incertezza nella casella del DataGridView
+
+                            riga.Cells["Incertezza"].Value = incertezzaString;
+
+
+                            // ottiene le cifre decimali dell'incertezza
+
+                            int decimali = formatta.QuanteDecimali(incertezzaString);
+
+
+                            //formatta il risultato con le stesse cifre decimali dell'incertezza (come da Accredia)
+
+                            risultatoStr = exeU.ottieniValore(rigaEx, colonnaEx);
+
+                            double risultatoD = Convert.ToDouble(risultatoStr);
+
+                            risultatoD = Math.Round(risultatoD, decimali);
+
+                            risultatoString = Convert.ToString(risultatoD);
+
+                            if (formatta.haiTagliato(risultatoStr) == 1)
+                            { risultatoStr = risultatoStr + "0"; }
+                            else if (formatta.haiTagliato(risultatoStr) == 2)
+                            { risultatoStr = risultatoStr + ",0"; }
+
+                            riga.Cells["Risultato"].Value = risultatoStr;
+                        }
+                    }
+
+                    exeU.liberaRisorse();
+                }
+
+                else
+                {
+                    MessageBox.Show("Il foglio di calcolo " + paraB.foglio + " non esiste o è stato resgistrato scorrettamente. Controllare.");
+                }
+            }
+
+            Georgia.Close();
+
+            stopwatch.Stop();
+
+            MessageBox.Show(stopwatch.Elapsed.ToString());
+
+        }
