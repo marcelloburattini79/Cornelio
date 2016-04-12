@@ -1,0 +1,76 @@
+        // Ottiene un vettore di stringhe contenente i valori di parametri multipli con relativi eventuali segni di inferiore
+
+        public string[] ottieniValoriMultipli(parametroBean paraB)
+        {
+            string risultatoString = "";
+
+            string nomeFoglio = paraB.foglio;
+
+            string[] rif1 = paraB.rif1.Split(',');
+
+            string[] rif2 = paraB.rif2.Split(',');
+
+            int rigaIniziale = Convert.ToInt32(rif1[0]);
+
+            int rigaFinale = Convert.ToInt32(rif2[0]);
+
+            int colonna = Convert.ToInt32(rif1[1]);
+
+            string accettazione = paraB.accettazione;
+
+            int meseCalcoloInt = paraB.dataAccettazione.Month;
+
+            string meseCalcolo = string.Format("{0:00}", meseCalcoloInt);
+
+            string percorso = @"\\Server\DATI\Gestione\Calcoli\Calcoli\Archivio\" + meseCalcolo + "\\"
+                + accettazione + "-16" + "\\" + accettazione + "-16.xls";
+
+            nomeFoglio = accettazione + " 16 " + nomeFoglio;
+
+
+            //Imposta il file excel ed il nome del foglio di calcolo
+
+            this.risultatoWB = risultatoEA.Workbooks.Open(percorso);
+
+            try
+            {
+                this.risultatoWs = risultatoWB.Sheets[nomeFoglio];
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            { }
+
+
+            //importa i risultati in una matrice bidimensionale
+
+            int i = rigaIniziale;
+
+            string[] vettoreValori = new string[1000];
+
+            while (i < rigaFinale + 1)
+            {
+
+                //formatta il risultato per ogni riga dell'intervallo della colonna excel dei risultati risultati
+
+                risultatoString = ottieniValore(i, colonna);
+
+                Double decimoMeridio = Convert.ToDouble(risultatoString);
+
+                risultatoString = formatta.significative(decimoMeridio);
+
+                if (formatta.haiTagliato(risultatoString) == 1)
+                { risultatoString = risultatoString + "0"; }
+                else if (formatta.haiTagliato(risultatoString) == 2)
+                { risultatoString = risultatoString + ",0"; }
+
+
+                //salva i valori formattati nell'array aggiungendo l'eventuale inferiore adavanti
+
+                string inferiore = (risultatoWs.Cells[i, colonna - 1].Value) as string;
+
+                vettoreValori[i - rigaIniziale] = inferiore + " " + risultatoString;
+
+                i++;
+            }
+
+            return vettoreValori;
+        }
