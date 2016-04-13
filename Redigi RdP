@@ -1,0 +1,135 @@
+        public void redigi(List<parametroBean> listaParametri)
+        {
+
+            foreach (parametroBean paraB in listaParametri)
+            {
+
+                RealWordDoc.Tables[2].Rows.Add();
+
+                int ultimaRiga = RealWordDoc.Tables[2].Rows.Count;
+
+                //toglie il bordo superiore della riga, imposta il colore dello sfondo e setta l'altezza a 0.5
+
+                RealWordDoc.Tables[2].Rows.Last.Borders[WdBorderType.wdBorderTop].Visible = false;
+
+                RealWordDoc.Tables[2].Rows.Last.Shading.BackgroundPatternColor = WdColor.wdColorWhite;
+
+                RealWordDoc.Tables[2].Rows.Height = 15F;
+
+
+                //Controlla se la riga si trova nella pagina successiva
+
+                paginaAttuale = RealWordDoc.Tables[2].Range.get_Information(Word.WdInformation.wdActiveEndPageNumber);
+
+                if (paginaAttuale > paginaPrecedente) // siamo ancora nella stessa pagina
+                {
+
+                    //Chiude con la linea la tabella precedente
+
+                    RealWordDoc.Tables[2].Rows[ultimaRiga - 1].Borders[WdBorderType.wdBorderBottom].Visible = true;
+                    RealWordDoc.Tables[2].Rows[ultimaRiga - 1].Borders[WdBorderType.wdBorderBottom].Color = WdColor.wdColorLightBlue;
+
+                    // crea l'intestazione della tabella
+
+                    Cell parametroCellIn = RealWordDoc.Tables[2].Cell(ultimaRiga, 1);
+                    parametroCellIn.Range.Font.Size = 9;
+
+                    Cell metodoCellIn = RealWordDoc.Tables[2].Cell(ultimaRiga, 2);
+                    metodoCellIn.Range.Font.Bold = 1;
+                    metodoCellIn.Range.Font.Size = 9;
+
+                    Cell risultatoCellIn = RealWordDoc.Tables[2].Cell(ultimaRiga, 3);
+                    risultatoCellIn.Range.Font.Bold = 1;
+                    risultatoCellIn.Range.Font.Size = 9;
+
+                    Cell unitaMisuraCellIn = RealWordDoc.Tables[2].Cell(ultimaRiga, 4);
+                    unitaMisuraCellIn.Range.Font.Bold = 1;
+                    unitaMisuraCellIn.Range.Font.Size = 9;
+
+                    Cell limiteCellIn = RealWordDoc.Tables[2].Cell(ultimaRiga, 5);
+                    limiteCellIn.Range.Font.Bold = 1;
+                    limiteCellIn.Range.Font.Size = 9;
+
+
+                    //inserisce il testo nelle celle
+
+                    parametroCellIn.Range.Text = "Parametro";
+
+                    metodoCellIn.Range.Text = "Metodo";
+
+                    risultatoCellIn.Range.Text = "Valore rilevato";
+
+                    unitaMisuraCellIn.Range.Text = "Unità di misura";
+
+                    limiteCellIn.Range.Text = "limite";
+
+                    // Aggiorna "paginaPrecedente"
+
+                    paginaPrecedente = paginaAttuale;
+
+                    //Aggiunge una riga per il prossimo parametro e aggiorna il contatore "ultimariga"
+
+                    RealWordDoc.Tables[2].Rows.Add();
+
+                    ultimaRiga++;
+
+                    //Imposta il colore dello sfondo
+
+                    RealWordDoc.Tables[2].Rows[ultimaRiga - 1].Shading.BackgroundPatternColor = WdColor.wdColorGray05;
+
+                }
+
+
+                //Inizializza e formatta la posizione delle celle della tabella
+
+                Cell parametroCell = RealWordDoc.Tables[2].Cell(ultimaRiga, 1);
+                parametroCell.Range.Font.Bold = 1;
+                parametroCell.Range.Font.Size = 8;
+
+                Cell metodoCell = RealWordDoc.Tables[2].Cell(ultimaRiga, 2);
+                metodoCell.Range.Font.Bold = 0;
+                metodoCell.Range.Font.Size = 8;
+
+                Cell risultatoCell = RealWordDoc.Tables[2].Cell(ultimaRiga, 3);
+                risultatoCell.Range.Font.Bold = 1;
+                risultatoCell.Range.Font.Size = 8;
+
+                Cell unitaMisuraCell = RealWordDoc.Tables[2].Cell(ultimaRiga, 4);
+                unitaMisuraCell.Range.Font.Bold = 0;
+                unitaMisuraCell.Range.Font.Size = 8;
+
+                Cell limiteCell = RealWordDoc.Tables[2].Cell(ultimaRiga, 5);
+                limiteCell.Range.Font.Bold = 0;
+                limiteCell.Range.Font.Size = 8;
+
+
+                //inserisce il testo nelle celle
+
+                parametroCell.Range.Text = paraB.nome;
+
+                metodoCell.Range.Text = paraB.metodo;
+
+                risultatoCell.Range.Text = paraB.risultato;
+
+                unitaMisuraCell.Range.Text = paraB.unitaMisura;
+
+                limiteCell.Range.Text = paraB.limiteA;
+
+
+                if (paraB.haFigli)
+                {
+                    MySqlConnection SanFrancisco = usaConnection1.apriConn();
+
+                    List<parametroBean> listaFigli = daoCL1.ottieniFigliByCF(SanFrancisco, paraB.accettazione, paraB.codiceFamiglia);
+
+                    usaConnection1.chiudiConn();
+
+                    redigi(listaFigli);
+                }
+
+            }
+
+            //Chiude con la sbarra la prima riga
+            RealWordDoc.Tables[2].Rows[1].Borders[WdBorderType.wdBorderBottom].Visible = true;
+            RealWordDoc.Tables[2].Rows[1].Borders[WdBorderType.wdBorderBottom].Color = WdColor.wdColorLightBlue;
+        }
